@@ -4,7 +4,7 @@
     <meta charset = "UTF-8" />
     <meta name = "viewport" content = "width=device-width, initial-scale=1.0" />
     <title>Sign Up</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
@@ -51,9 +51,7 @@
             
             <div class="divider">
                 <span >or</span> 
-            </div>
-
-            <button type="alternative" id="googleSignUp" href="#"><img src="google.png" class="logo" alt="Google Logo">Register with Google</button> 
+            <button type="button" id="googleSignUp" href="#"><img src="{{ url_for('static', filename='google.svg') }}" class="logo" alt="Google Logo">Register with Google</button> 
 
         </form>
 
@@ -61,6 +59,6 @@
         <p class="footer">© 2026 Business App. All rights reserved.</p>
     </div>
 
-    <script src="script.js"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>

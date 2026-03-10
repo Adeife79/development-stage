@@ -8,16 +8,16 @@ form.addEventListener("submit", async (e) => {
         businessName: document.getElementById("businessName").value,
         ownerName: document.getElementById("ownerName").value,
         email: document.getElementById("email").value,
-        tel: document.getElementById("tel").value,
+        tel: document.getElementById("phoneNumber").value,
         password: document.getElementById("password").value,
         confirmPassword: document.getElementById("confirmPassword").value,
         businessType: document.getElementById("businessType").value,
-        checkbox: document.getElementById("terms").checked,
-        checkbox: document.getElementById("newsletter").checked
+        terms: document.getElementById("terms").checked,
+        newsletter: document.getElementById("newsletter").checked
     };
 
     try {
-        const response = await fetch("http://localhost:8085/api/business/register", {
+        const response = await fetch("/api/business/register", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json" },

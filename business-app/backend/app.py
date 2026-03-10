@@ -1,10 +1,15 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 
 app = Flask(__name__)
 CORS(app)
 
 businesses = []
+
+
+@app.route('/')
+def home():
+    return render_template('app.html')
 
 @app.route("/api/business/register", methods=["POST"])
 def register_business():
