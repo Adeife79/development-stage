@@ -6,7 +6,7 @@ pipeline {
         AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
         AWS_REGION = 'eu-north-1'
         DOCKER_IMAGE = 'business-app'
-        IMAGE_REPOSITORY_NAME = 'docker-image-repo'
+        IMAGE_REPOSITORY_NAME = 'business-app-repo'
         IMAGE_TAG = 'latest'
         AWS_ACCOUNT_ID = credentials('aws-account-id')
     }
@@ -21,6 +21,7 @@ pipeline {
 
         stage ('Create S3 Bucket') {
             environment {
+                AWS_REGION = 'eu-north-1'
                 BUCKET_NAME = "demo2-terraform-state-bucket"
             }
 
@@ -30,7 +31,7 @@ pipeline {
                     credentialsId: 'demo2-aws-credentials'
                 ]]) {
                     sh '''
-                        aws s3api create-bucket --bucket "$BUCKET_NAME" --region eu-north-1 --create-bucket-configuration LocationConstraint eu-north-1
+                        aws s3api create-bucket --bucket "$BUCKET_NAME" --region eu-north-1 --create-bucket-configuration LocationConstraint=eu-north-1
                     '''
                 }
             }
@@ -47,30 +48,33 @@ pipeline {
         stage ('Terraform Plan'){
             steps {
                 dir ('terraform-config') {
-                    sh 'terraform plan -out=tfplan -input=false'
+                    sh 'terraform plan -input=false -out=tfplan'
                 }
             }
         }
 
         stage('Terraform Apply') {
-            when {
-                expression {return params.APPLY_INFRA == true}
-            }
             steps {
                 dir ('terraform-config') {
-                    sh 'terraform apply -input=false -auto-approve tfplan'
+                    sh 'terraform apply -auto-approve tfplan'
                 }
             }
         }
 
         stage ('Build and Push Docker Image to AWS ECR') {  
             steps {
-                sh """
-                    aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin
-                    $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-                    docker build -t $DOCKER_IMAGE:$IMAGE_TAG .
-                    docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPOSITORY_NAME:$IMAGE_TAG  
-                """           
+                withCredentials([[
+                    $class: 'AmazonWebServicesCredentialsBinding',
+                    credentialsId: 'demo2-aws-credentials'
+                ]]) {
+                    sh """
+                        aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
+                        docker build -t $IMAGE_REPOSITORY_NAME:$IMAGE_TAG .
+                        docker tag $IMAGE_REPOSITORY_NAME:$IMAGE_TAG $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPOSITORY_NAME:$IMAGE_TAG
+                        docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPOSITORY_NAME:$IMAGE_TAG  
+                    """     
+                }
+                      
             }
         }
 
