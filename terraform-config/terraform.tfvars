@@ -12,6 +12,6 @@ ec2_ami = "ami-000abc18cac176b7f"
 ec2_instance_type = "t3.nano"
 ec2_instance_name = "adeife-ec2-instance"
 app_port = 8085
-ecr_repository_name = "business-app"
+ecr_repository_name = "business-app-repo"
 
 
