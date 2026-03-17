@@ -38,7 +38,7 @@ resource "aws_instance" "ec2_instance" {
     iam_instance_profile = aws_iam_instance_profile.ec2_profile.name
     security_groups = [aws_security_group.sg.id]
 
-    tags {
+    tags = {
          Name = var.ec2_instance_name
     }
         
