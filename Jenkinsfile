@@ -82,8 +82,8 @@ pipeline {
             steps {
                 dir ('business-app/backend'){
                         sh '''
-                            docker build -t $DOCKER_IMAGE .
-                            docker tag $DOCKER_IMAGE $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPOSITORY_NAME:$IMAGE_TAG
+                            docker build -t $IMAGE_REPOSITORY_NAME .
+                            docker tag $IMAGE_REPOSITORY_NAME $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPOSITORY_NAME:$IMAGE_TAG
                             docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPOSITORY_NAME:$IMAGE_TAG  
                         '''     
                 }
@@ -117,8 +117,10 @@ pipeline {
                         --instance-id $INSTANCE_ID \
                         --document-name "AWS-RunShellScript" \
                         --parameters 'commands=[
-                            "AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID},
+                            "AWS_REGION=${AWS_REGION}",
+                            "AWS_ACCOUNT_ID=${AWS_ACCOUNT_ID}",
                             "IMAGE_REPOSITORY_NAME=$IMAGE_REPOSITORY_NAME",
+                            "DOCKER_IMAGE=${DOCKER_IMAGE}",
                             "IMAGE_TAG=$IMAGE_TAG",
                             "sudo systemctl start amazon-ssm-agent || true",
                             "sudo systemctl enable amazon-ssm-agent || true",
@@ -127,11 +129,13 @@ pipeline {
                             "sudo dnf install -y docker || true",
                             "sudo systemctl start docker || true",
                             "sudo systemctl enable docker || true",
-                            "aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.eu-north-1.amazonaws.com",
-                            "docker pull $AWS_ACCOUNT_ID.dkr.ecr.eu-north-1.amazonaws.com/$IMAGE_REPOSITORY_NAME:$IMAGE_TAG || true",
-                            "docker run -d -p 8085:8085 $AWS_ACCOUNT_ID.dkr.ecr.eu-north-1.amazonaws.com/$IMAGE_REPOSITORY_NAME:$IMAGE_TAG || true"
+                            "aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com",
+                            "docker pull $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPOSITORY_NAME:$IMAGE_TAG || true",
+                            "docker stop ${DOCKER_IMAGE} || true",
+                            "docker rm ${DOCKER_IMAGE} || true",
+                            "docker run -d --name business-app -p 8085:8085 $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$IMAGE_REPOSITORY_NAME:$IMAGE_TAG || true"
                             ]' \
-                        --region eu-north-1 \
+                        --region $AWS_REGION \
                         --query "Command.CommandId" \
                         --output text)
 
@@ -141,12 +145,12 @@ pipeline {
             aws ssm wait command-executed \
                 --command-id $COMMAND_ID \
                 --instance-id $INSTANCE_ID \
-                --region eu-north-1
+                --region $AWS_REGION
             
             aws ssm get-command-invocation \
                 --command-id $COMMAND_ID \
                 --instance-id $INSTANCE_ID \
-                --region eu-north-1
+                --region $AWS_REGION
             '''
 
             echo "Application successfully deployed!!"
